@@ -1,0 +1,19 @@
+root: true
+ignorePatterns:
+  - "!.*"
+  - /.nyc_output/
+  - /.test-workspace/
+  - /coverage/
+  - /dist/
+  - /node_modules/
+
+extends:
+  - plugin:@mysticatea/es2020
+rules:
+  "@mysticatea/node/no-missing-import": "off"
+  "@mysticatea/prettier": "off"
+  "@mysticatea/ts/explicit-member-accessibility": "off"
+
+overrides:
+  - files: "test/**"
+    extends: plugin:@mysticatea/+node
