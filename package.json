@@ -1,6 +1,6 @@
 {
   "name": "mocha-assert-snapshot",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Snapshot test utilities for mocha",
   "engines": {
     "node": ">=10.13.0"
