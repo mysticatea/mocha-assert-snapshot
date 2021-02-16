@@ -15,9 +15,7 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "chunk",
-    "index.*",
-    "register.*"
+    "index.*"
   ],
   "dependencies": {
     "pretty-format": "^26.6.2"
@@ -53,7 +51,7 @@
     "format": "prettier . --write",
     "lint": "eslint .",
     "test": "run-s \"build:{clean,rollup}\" && nyc mocha",
-    "test:clean": "rimraf \".nyc_output/*\" \"coverage/*\" node_modules/.cache/nyc",
+    "test:clean": "rimraf \".nyc_output/*\" \".test-workspace/*\" \"coverage/*\" node_modules/.cache/nyc",
     "test:static": "tsc -p tsconfig/build.json --noEmit && eslint . && prettier . --check",
     "test:watch": "warun \"dist/**/*.js\" \"test/**/*.ts\" -- nyc mocha",
     "preversion": "npm run -s test:static && npm test",
