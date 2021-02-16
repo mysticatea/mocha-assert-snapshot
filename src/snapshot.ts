@@ -22,47 +22,47 @@ export class Snapshot {
         this.currentTest = title
     }
 
-    assert<T>(
-        f: (expected: string) => T,
-    ): T extends PromiseLike<any> ? Promise<void> : void {
+    acquireSnapshotEntryKey(): string {
         const index = this.currentIndex++
         const suffix = index === 0 ? " " : ` #${index}`
         const key = `${this.currentTest}${suffix}`
+
         this.unusedKeys.delete(key)
 
-        const expected = this.content[key]
-        const tmp: any = f(expected)
-
-        const postprocess = (value: unknown) => {
-            const actual = format(value)
-
-            if (isUpdateMode || expected === undefined) {
-                this.content[key] = actual
-                this.updated = true
-            } else if (actual !== expected) {
-                throw Object.assign(new Error("Different from the snapshot"), {
-                    code: "ERR_ASSERTION",
-                    operator: "strictEqual",
-                    actual,
-                    expected,
-                    generatedMessage: false,
-                })
-            }
-        }
-
-        if (typeof tmp?.then !== "function") {
-            return postprocess(tmp) as any
-        }
-        return tmp.then(postprocess)
+        return key
     }
 
-    load(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+    getSnapshotValue(key: string): string | undefined {
+        return this.content[key]
+    }
+
+    assert(key: string, value: unknown): this {
+        const expected = this.content[key]
+        const actual = format(value)
+
+        if (isUpdateMode || expected === undefined) {
+            this.content[key] = actual
+            this.updated = true
+        } else if (actual !== expected) {
+            throw Object.assign(new Error("Different from the snapshot"), {
+                code: "ERR_ASSERTION",
+                operator: "strictEqual",
+                actual,
+                expected,
+                generatedMessage: false,
+            })
+        }
+
+        return this
+    }
+
+    load(): Promise<this> {
+        return new Promise<this>((resolve, reject) => {
             fs.readFile(this.filePath, "utf8", (readError, data) => {
                 if (readError != null) {
                     //istanbul ignore else
                     if (readError.code === "ENOENT") {
-                        resolve()
+                        resolve(this)
                     } else {
                         reject(readError)
                     }
@@ -74,7 +74,7 @@ export class Snapshot {
                         this.unusedKeys.add(key)
                     }
 
-                    resolve()
+                    resolve(this)
                 } catch (parseError) {
                     //istanbul ignore next
                     reject(parseError)
@@ -83,8 +83,8 @@ export class Snapshot {
         })
     }
 
-    save(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+    save(): Promise<this> {
+        return new Promise<this>((resolve, reject) => {
             // Clear unused data
             if (isUpdateMode) {
                 for (const key of this.unusedKeys) {
@@ -95,7 +95,7 @@ export class Snapshot {
 
             // Done if no updated
             if (!this.updated) {
-                resolve()
+                resolve(this)
                 return
             }
 
@@ -111,11 +111,11 @@ export class Snapshot {
 
             ensureDirectory(dirname(this.filePath)).then(() => {
                 fs.writeFile(this.filePath, data, writeError => {
-                    //istanbul ignore if
-                    if (writeError != null) {
-                        reject(writeError)
+                    //istanbul ignore else
+                    if (writeError == null) {
+                        resolve(this)
                     } else {
-                        resolve()
+                        reject(writeError)
                     }
                 })
             }, reject)

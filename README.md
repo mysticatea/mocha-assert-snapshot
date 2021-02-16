@@ -36,28 +36,61 @@ mocha --require mocha-assert-snapshot -- test/**/*.js
 
 It registers root hooks to read/write snapshots.
 
-Then use `assertSnapshot(value)` or `assertThrows(f)` in your tests.
+Then use `assertSnapshot(value)` or `assertSnapshotThrows(func)` in your tests.
 
 ```ts
-import { assertSnapshot, assertThrows } from "mocha-assert-snapshot";
+import { assertSnapshot, assertSnapshotThrows } from "mocha-assert-snapshot";
 
 it("a snapshot test", () => {
-  assertSnapshot({ value: "foo" });
+  const actual = doSomething();
+  assertSnapshot(actual);
+});
+
+it("a snapshot test (async)", async () => {
+  const actual = await doSomething();
+  assertSnapshot(actual);
 });
 
 it("a snapshot test for thrown errors", () => {
-  assertThrows(() => {
+  assertSnapshotThrows(() => {
     throw new Error("my error");
   });
 });
 
-it("those functions await promises automatically", async () => {
-  await assertSnapshot(fs.promises.readFile("existence.txt"));
-  await assertThrows(() => fs.promises.readFile("non-existence.txt"));
+it("a snapshot test for thrown errors (async)", async () => {
+  await assertSnapshotThrows(async () => {
+    throw new Error("my error");
+  });
 });
 ```
 
 Of course, it works well along with the `--parallel` option.
+
+### ■ Update Snapshot
+
+There are two ways to update snapshots.
+
+#### 1. `--update`
+
+Giving `--update` CLI option, it updates snapshots.
+
+```
+mocha --require mocha-assert-snapshot --update -- test/**/*.js
+```
+
+It's nice, but it doesn't work on parallel mode because Mocha doesn't pass the CLI arguments to workers.
+
+#### 2. `MOCHA_ASSERT_SNAPSHOT=update`
+
+Giving `MOCHA_ASSERT_SNAPSHOT=update` environment variable, it updates snapshots.
+
+```
+MOCHA_ASSERT_SNAPSHOT=update mocha --require mocha-assert-snapshot -- test/**/*.js
+```
+
+If you want to use this way on cross-platform, use [cross-env] package or something like that.
+
+[cross-env]: https://www.npmjs.com/package/cross-env
 
 ## 📰 Changelog
 

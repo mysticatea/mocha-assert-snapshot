@@ -15,10 +15,12 @@ describe('If no "--require mocha-assert-snapshot" is present', () => {
                 assertSnapshot({ value: "foo" })
             })
         `,
-        "test/assert-throws.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
+        "test/assert-snapshot-throws.js": code`
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
             it("snapshot-test", () => {
-                assertThrows(() => {
+                assertSnapshotThrows(() => {
                     throw new Error("foo")
                 })
             })
@@ -57,10 +59,10 @@ describe('If no "--require mocha-assert-snapshot" is present', () => {
         })
     })
 
-    describe("mocha test/assert-throws.js", () => {
+    describe("mocha test/assert-snapshot-throws.js", () => {
         let result: Executor.Result
         before(async () => {
-            result = await executor.mocha("test/assert-throws.js")
+            result = await executor.mocha("test/assert-snapshot-throws.js")
         })
 
         it("should finish with the exit code 1", () => {
@@ -76,12 +78,12 @@ describe('If no "--require mocha-assert-snapshot" is present', () => {
             )
         })
 
-        it('should not create "test/__snapshot__/assert-throws.js"', async () => {
+        it('should not create "test/__snapshot__/assert-snapshot-throws.js"', async () => {
             await assert.rejects(
                 readFile(
                     path.join(
                         executor.workspacePath,
-                        "test/__snapshot__/assert-throws.js",
+                        "test/__snapshot__/assert-snapshot-throws.js",
                     ),
                     "utf8",
                 ),

@@ -1,3 +1,3 @@
 export * from "./assert-snapshot"
-export * from "./assert-throws"
+export * from "./assert-snapshot-throws"
 export * from "./register"

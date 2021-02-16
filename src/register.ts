@@ -1,5 +1,4 @@
-import { Snapshot } from "./snapshot"
-import { setCurrentSnapshot, snapshotMap } from "./state"
+import { setCurrentSnapshot, snapshotPool } from "./state"
 
 /**
  * Define the hooks to read/write snapshots.
@@ -16,12 +15,7 @@ export const mochaHooks = {
     // Load snapshot and set the current test name.
     async beforeEach(this: any): Promise<void> {
         const testFilePath = this.currentTest?.file ?? "anonymous.js"
-        let snapshot = snapshotMap.get(testFilePath)
-        if (snapshot == null) {
-            snapshot = new Snapshot(toSnapshotFilePath(testFilePath))
-            await snapshot.load()
-            snapshotMap.set(testFilePath, snapshot)
-        }
+        const snapshot = await snapshotPool.get(testFilePath)
         snapshot.setTestTitle(this.currentTest?.fullTitle() ?? "")
         setCurrentSnapshot(snapshot)
     },
@@ -33,17 +27,24 @@ export const mochaHooks = {
 
     // Save snapshots.
     async afterAll(): Promise<void> {
-        const promises = Array.from(snapshotMap.values(), snapshot =>
+        const promises = Array.from(snapshotPool.values(), snapshot =>
             snapshot.save(),
         )
-        snapshotMap.clear()
-        await Promise.all(promises)
-    },
-}
+        snapshotPool.clear()
 
-function toSnapshotFilePath(filePath: string): string {
-    const ancestors = filePath.replace(/\\/gu, "/").split("/")
-    const rawName = ancestors.pop()
-    const name = rawName?.endsWith(".js") ? rawName : `${rawName}.js`
-    return [...ancestors, "__snapshot__", name].join("/")
+        // Wait for all promises even if errored.
+        let firstError: unknown = undefined
+        for (const promise of promises) {
+            try {
+                await promise
+            } catch (error) {
+                //istanbul ignore next
+                firstError = firstError ?? error
+            }
+        }
+        //istanbul ignore if
+        if (firstError !== undefined) {
+            throw firstError
+        }
+    },
 }

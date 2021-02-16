@@ -7,20 +7,24 @@ import { code } from "./lib/misc"
 
 const readFile = util.promisify(fs.readFile)
 
-describe("assertThrows(f)", () => {
+describe("assertSnapshotThrows(f) --async--", () => {
     const executor = Executor.withFiles({
         "test/initial.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
-            it("snapshot-test", () => {
-                assertThrows(() => {
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
+            it("snapshot-test", async () => {
+                await assertSnapshotThrows(async () => {
                     throw new Error("foo")
                 })
             })
         `,
         "test/initial-not-thrown.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
-            it("snapshot-test", () => {
-                assertThrows(() => {})
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
+            it("snapshot-test", async () => {
+                await assertSnapshotThrows(async () => {})
             })
         `,
         "test/__snapshot__/equal.js": code`
@@ -29,9 +33,11 @@ describe("assertThrows(f)", () => {
             ${"`"}.slice(1, -1)
         `,
         "test/equal.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
-            it("snapshot-test", () => {
-                assertThrows(() => {
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
+            it("snapshot-test", async () => {
+                await assertSnapshotThrows(async () => {
                     throw new Error("foo")
                 })
             })
@@ -42,9 +48,11 @@ describe("assertThrows(f)", () => {
             ${"`"}.slice(1, -1)
         `,
         "test/not-equal.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
-            it("snapshot-test", () => {
-                assertThrows(() => {
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
+            it("snapshot-test", async () => {
+                await assertSnapshotThrows(async () => {
                     throw new Error("bar")
                 })
             })
@@ -55,15 +63,19 @@ describe("assertThrows(f)", () => {
             ${"`"}.slice(1, -1)
         `,
         "test/not-thrown.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
-            it("snapshot-test", () => {
-                assertThrows(() => {})
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
+            it("snapshot-test", async () => {
+                await assertSnapshotThrows(async () => {})
             })
         `,
         "test/not-a-function.js": code`
-            const { assertThrows } = require(${JSON.stringify(IndexPath)})
-            it("snapshot-test", () => {
-                assertThrows("foo")
+            const { assertSnapshotThrows } = require(${JSON.stringify(
+                IndexPath,
+            )})
+            it("snapshot-test", async () => {
+                await assertSnapshotThrows("foo")
             })
         `,
     })
@@ -122,7 +134,7 @@ describe("assertThrows(f)", () => {
                 result.stdout.includes(
                     "Expected to throw an error: (not thrown yet)",
                 ),
-                'should print "Expected to throw an error: (not thrown yet)"',
+                result.stdout,
             )
         })
 
@@ -155,10 +167,7 @@ describe("assertThrows(f)", () => {
         })
 
         it('should print "1 passing"', () => {
-            assert(
-                result.stdout.includes("1 passing"),
-                'should print "1 passing"',
-            )
+            assert(result.stdout.includes("1 passing"), result.stdout)
         })
     })
 
@@ -178,10 +187,7 @@ describe("assertThrows(f)", () => {
         })
 
         it('should print "1 failing"', () => {
-            assert(
-                result.stdout.includes("1 failing"),
-                'should print "1 failing"',
-            )
+            assert(result.stdout.includes("1 failing"), result.stdout)
         })
 
         it('should not update "test/__snapshot__/not-equal.js"', async () => {
@@ -219,10 +225,7 @@ describe("assertThrows(f)", () => {
         })
 
         it('should print "1 failing"', () => {
-            assert(
-                result.stdout.includes("1 failing"),
-                'should print "1 failing"',
-            )
+            assert(result.stdout.includes("1 failing"), result.stdout)
         })
 
         it('should print "Expected to throw an error: [Error: foo]"', () => {
@@ -230,7 +233,7 @@ describe("assertThrows(f)", () => {
                 result.stdout.includes(
                     "Expected to throw an error: [Error: foo]",
                 ),
-                'should print "Expected to throw an error: [Error: foo]"',
+                result.stdout,
             )
         })
 
@@ -269,15 +272,12 @@ describe("assertThrows(f)", () => {
         })
 
         it('should print "1 failing"', () => {
-            assert(
-                result.stdout.includes("1 failing"),
-                'should print "1 failing"',
-            )
+            assert(result.stdout.includes("1 failing"), result.stdout)
         })
 
-        it('should print [TypeError: "f" must be a function]', () => {
+        it('should print [TypeError: "func" must be a function]', () => {
             assert(
-                result.stdout.includes('TypeError: "f" must be a function'),
+                result.stdout.includes('TypeError: "func" must be a function'),
                 result.stdout,
             )
         })
