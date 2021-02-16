@@ -50,7 +50,7 @@
     "clean": "run-p build:clean test:clean",
     "format": "prettier . --write",
     "lint": "eslint .",
-    "test": "run-s \"build:{clean,rollup}\" && nyc mocha",
+    "test": "run-s \"build:{clean,rollup}\" && nyc mocha --parallel",
     "test:clean": "rimraf \".nyc_output/*\" \".test-workspace/*\" \"coverage/*\" node_modules/.cache/nyc",
     "test:static": "tsc -p tsconfig/build.json --noEmit && eslint . && prettier . --check",
     "test:watch": "warun \"dist/**/*.js\" \"test/**/*.ts\" -- nyc mocha",
