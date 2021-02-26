@@ -177,6 +177,63 @@ describe("assertSnapshot(value) --compare--", () => {
                 assertSnapshot({ value: "bar" })
             })
         `,
+        "test/__snapshot__/keep-failed.js": code`
+            exports["snapshot-test 1 "] = String.raw${"`"}
+            Object {
+              "value": "foo",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test 2 "] = String.raw${"`"}
+            Object {
+              "value": "bar",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test extra "] = String.raw${"`"}
+            Object {
+              "value": "extra",
+            }
+            ${"`"}.slice(1, -1)
+        `,
+        "test/keep-failed.js": code`
+            const { assertSnapshot } = require(${JSON.stringify(IndexPath)})
+            it("snapshot-test 1", () => {
+                assertSnapshot({ value: "foo" })
+            })
+            it("snapshot-test 2", () => {
+                throw new Error("fail")
+                assertSnapshot({ value: "bar" })
+            })
+        `,
+        "test/__snapshot__/keep-pending.js": code`
+            exports["snapshot-test 1 "] = String.raw${"`"}
+            Object {
+              "value": "foo",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test 2 "] = String.raw${"`"}
+            Object {
+              "value": "bar",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test extra "] = String.raw${"`"}
+            Object {
+              "value": "extra",
+            }
+            ${"`"}.slice(1, -1)
+        `,
+        "test/keep-pending.js": code`
+            const { assertSnapshot } = require(${JSON.stringify(IndexPath)})
+            it("snapshot-test 1", () => {
+                assertSnapshot({ value: "foo" })
+            })
+            xit("snapshot-test 2", () => {
+                assertSnapshot({ value: "bar" })
+            })
+        `,
     })
 
     describe("mocha --require mocha-assert-snapshot test/equal.js", () => {
@@ -603,6 +660,94 @@ describe("assertSnapshot(value) --compare--", () => {
                     exports["snapshot-test 1 "] = String.raw${"`"}
                     Object {
                       "value": "only",
+                    }
+                    ${"`"}.slice(1, -1)
+                    
+                    exports["snapshot-test 2 "] = String.raw${"`"}
+                    Object {
+                      "value": "bar",
+                    }
+                    ${"`"}.slice(1, -1)
+                `,
+            )
+        })
+    })
+
+    describe("mocha --require mocha-assert-snapshot --update test/keep-failed.js", () => {
+        let result: Executor.Result
+        before(async () => {
+            result = await executor.mocha(
+                "--require",
+                RegisterPath,
+                "--update",
+                "--",
+                "test/keep-failed.js",
+            )
+        })
+
+        it("should finish with the exit code 1", () => {
+            assert.strictEqual(result.code, 1, result.stderr)
+        })
+
+        it("should not remov the unused entries of failed tests from the snapshot file", async () => {
+            const snapshot = await readFile(
+                path.join(
+                    executor.workspacePath,
+                    "test/__snapshot__/keep-failed.js",
+                ),
+                "utf8",
+            )
+
+            assert.strictEqual(
+                snapshot,
+                code`
+                    exports["snapshot-test 1 "] = String.raw${"`"}
+                    Object {
+                      "value": "foo",
+                    }
+                    ${"`"}.slice(1, -1)
+                    
+                    exports["snapshot-test 2 "] = String.raw${"`"}
+                    Object {
+                      "value": "bar",
+                    }
+                    ${"`"}.slice(1, -1)
+                `,
+            )
+        })
+    })
+
+    describe("mocha --require mocha-assert-snapshot --update test/keep-pending.js", () => {
+        let result: Executor.Result
+        before(async () => {
+            result = await executor.mocha(
+                "--require",
+                RegisterPath,
+                "--update",
+                "--",
+                "test/keep-pending.js",
+            )
+        })
+
+        it("should finish with the exit code 0", () => {
+            assert.strictEqual(result.code, 0, result.stderr)
+        })
+
+        it("should not remov the unused entries of failed tests from the snapshot file", async () => {
+            const snapshot = await readFile(
+                path.join(
+                    executor.workspacePath,
+                    "test/__snapshot__/keep-pending.js",
+                ),
+                "utf8",
+            )
+
+            assert.strictEqual(
+                snapshot,
+                code`
+                    exports["snapshot-test 1 "] = String.raw${"`"}
+                    Object {
+                      "value": "foo",
                     }
                     ${"`"}.slice(1, -1)
                     

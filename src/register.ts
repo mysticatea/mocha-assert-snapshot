@@ -1,3 +1,4 @@
+import { isUpdateMode } from "./config"
 import { setCurrentSnapshot, snapshotPool } from "./state"
 
 /**
@@ -14,9 +15,9 @@ import { setCurrentSnapshot, snapshotPool } from "./state"
 export const mochaHooks = {
     // Load snapshot and set the current test name.
     async beforeEach(this: any): Promise<void> {
-        const testFilePath = this.currentTest.file ?? "anonymous.js"
-        const snapshot = await snapshotPool.get(testFilePath)
-        snapshot.setTestTitle(this.currentTest.fullTitle() ?? "(anonymous)")
+        const { file, title } = getSpecifier(this.currentTest)
+        const snapshot = await snapshotPool.get(file)
+        snapshot.setTestTitle(title)
         setCurrentSnapshot(snapshot)
     },
 
@@ -30,6 +31,16 @@ export const mochaHooks = {
         // Skip pruning if bailed or `.only()` existed.
         const rootSuite = this.test.parent
         const noPrune = Boolean(rootSuite.bail() || rootSuite.hasOnly())
+
+        // Mark the failed or pending tests to avoid pruning.
+        if (isUpdateMode && !noPrune) {
+            rootSuite.eachTest((test: any) => {
+                if (!test.isPassed()) {
+                    const { file, title } = getSpecifier(test)
+                    snapshotPool.peek(file)?.markAsUsed(title)
+                }
+            })
+        }
 
         // Save snapshots.
         const promises = Array.from(snapshotPool.values(), snapshot =>
@@ -52,4 +63,11 @@ export const mochaHooks = {
             throw firstError
         }
     },
+}
+
+function getSpecifier(test: any): { file: string; title: string } {
+    return {
+        file: test.file ?? "anonymous.js",
+        title: test.fullTitle() ?? "(anonymous)",
+    }
 }

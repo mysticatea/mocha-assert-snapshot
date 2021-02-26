@@ -56,6 +56,17 @@ export class Snapshot {
         return this
     }
 
+    markAsUsed(title: string): void {
+        for (const unusedKey of this.unusedKeys) {
+            if (
+                unusedKey.startsWith(title) &&
+                /^ (?:#\d+)?$/u.test(unusedKey.slice(title.length))
+            ) {
+                this.unusedKeys.delete(unusedKey)
+            }
+        }
+    }
+
     load(): Promise<this> {
         return new Promise<this>((resolve, reject) => {
             fs.readFile(this.filePath, "utf8", (readError, data) => {

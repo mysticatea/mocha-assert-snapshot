@@ -15,6 +15,10 @@ export class FlyweightPool<K, V> {
         return value
     }
 
+    peek(key: K): V | undefined {
+        return this.cache.get(key)
+    }
+
     values(): IterableIterator<V> {
         return this.cache.values()
     }
