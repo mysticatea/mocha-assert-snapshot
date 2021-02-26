@@ -112,6 +112,24 @@ describe("assertSnapshot(value) --compare--", () => {
                 assertSnapshot({ value: "foo" })
             })
         `,
+        "test/__snapshot__/deleting-all.js": code`
+            exports["snapshot-test 1 "] = String.raw${"`"}
+            Object {
+              "value": "foo",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test 2 "] = String.raw${"`"}
+            Object {
+              "value": "foo",
+            }
+            ${"`"}.slice(1, -1)
+        `,
+        "test/deleting-all.js": code`
+            const { assertSnapshot } = require(${JSON.stringify(IndexPath)})
+            it("snapshot-test 1", () => {})
+            it("snapshot-test 2", () => {})
+        `,
     })
 
     describe("mocha --require mocha-assert-snapshot test/equal.js", () => {
@@ -410,6 +428,40 @@ describe("assertSnapshot(value) --compare--", () => {
                     ${"`"}.slice(1, -1)
                 `,
             )
+        })
+    })
+
+    describe("mocha --require mocha-assert-snapshot --update test/deleting-all.js", () => {
+        let result: Executor.Result
+        before(async () => {
+            result = await executor.mocha(
+                "--require",
+                RegisterPath,
+                "--update",
+                "--",
+                "test/deleting-all.js",
+            )
+        })
+
+        it("should finish with the exit code 0", () => {
+            assert.strictEqual(result.code, 0, result.stderr)
+        })
+
+        it("should remove the snapshot file", async () => {
+            try {
+                await readFile(
+                    path.join(
+                        executor.workspacePath,
+                        "test/__snapshot__/deleting-all.js",
+                    ),
+                    "utf8",
+                )
+            } catch (error) {
+                assert.strictEqual(error.code, "ENOENT")
+                return
+            }
+
+            assert.fail("should throw ENOENT error")
         })
     })
 })

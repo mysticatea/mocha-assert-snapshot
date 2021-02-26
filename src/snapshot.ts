@@ -99,7 +99,7 @@ export class Snapshot {
                 return
             }
 
-            // Write
+            // Generate the content of this snapshot file
             const data = Object.entries(this.content)
                 .map(([key, value]) => {
                     const keyStr = JSON.stringify(key)
@@ -109,16 +109,24 @@ export class Snapshot {
                 .sort(undefined)
                 .join("\n\n")
 
-            ensureDirectory(dirname(this.filePath)).then(() => {
-                fs.writeFile(this.filePath, data, writeError => {
-                    //istanbul ignore else
-                    if (writeError == null) {
-                        resolve(this)
-                    } else {
-                        reject(writeError)
-                    }
+            if (data !== "") {
+                // Save the snapshot to file
+                ensureDirectory(dirname(this.filePath)).then(() => {
+                    fs.writeFile(this.filePath, data, writeError => {
+                        //istanbul ignore else
+                        if (writeError == null) {
+                            resolve(this)
+                        } else {
+                            reject(writeError)
+                        }
+                    })
+                }, reject)
+            } else {
+                // Remove the snapshot file
+                fs.unlink(this.filePath, () => {
+                    resolve(this)
                 })
-            }, reject)
+            }
         })
     }
 }
