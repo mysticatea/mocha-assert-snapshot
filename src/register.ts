@@ -14,9 +14,9 @@ import { setCurrentSnapshot, snapshotPool } from "./state"
 export const mochaHooks = {
     // Load snapshot and set the current test name.
     async beforeEach(this: any): Promise<void> {
-        const testFilePath = this.currentTest?.file ?? "anonymous.js"
+        const testFilePath = this.currentTest.file ?? "anonymous.js"
         const snapshot = await snapshotPool.get(testFilePath)
-        snapshot.setTestTitle(this.currentTest?.fullTitle() ?? "")
+        snapshot.setTestTitle(this.currentTest.fullTitle() ?? "(anonymous)")
         setCurrentSnapshot(snapshot)
     },
 
@@ -26,9 +26,14 @@ export const mochaHooks = {
     },
 
     // Save snapshots.
-    async afterAll(): Promise<void> {
+    async afterAll(this: any): Promise<void> {
+        // Skip pruning if bailed or `.only()` existed.
+        const rootSuite = this.test.parent
+        const noPrune = Boolean(rootSuite.bail() || rootSuite.hasOnly())
+
+        // Save snapshots.
         const promises = Array.from(snapshotPool.values(), snapshot =>
-            snapshot.save(),
+            snapshot.save(noPrune),
         )
         snapshotPool.clear()
 

@@ -83,10 +83,10 @@ export class Snapshot {
         })
     }
 
-    save(): Promise<this> {
+    save(noPrune: boolean): Promise<this> {
         return new Promise<this>((resolve, reject) => {
             // Clear unused data
-            if (isUpdateMode) {
+            if (isUpdateMode && !noPrune) {
                 for (const key of this.unusedKeys) {
                     delete this.content[key]
                     this.updated = true

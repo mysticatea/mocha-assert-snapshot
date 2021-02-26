@@ -130,6 +130,53 @@ describe("assertSnapshot(value) --compare--", () => {
             it("snapshot-test 1", () => {})
             it("snapshot-test 2", () => {})
         `,
+        "test/__snapshot__/bail.js": code`
+            exports["snapshot-test 1 "] = String.raw${"`"}
+            Object {
+              "value": "foo",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test 2 "] = String.raw${"`"}
+            Object {
+              "value": "bar",
+            }
+            ${"`"}.slice(1, -1)
+        `,
+        "test/bail.js": code`
+            const { assertSnapshot } = require(${JSON.stringify(IndexPath)})
+            it("snapshot-test 1", () => {
+                assertSnapshot({ value: "bail" })
+            })
+            it("bail", () => {
+                throw new Error("bail")
+            })
+            it("snapshot-test 2", () => {
+                assertSnapshot({ value: "bar" })
+            })
+        `,
+        "test/__snapshot__/only.js": code`
+            exports["snapshot-test 1 "] = String.raw${"`"}
+            Object {
+              "value": "foo",
+            }
+            ${"`"}.slice(1, -1)
+            
+            exports["snapshot-test 2 "] = String.raw${"`"}
+            Object {
+              "value": "bar",
+            }
+            ${"`"}.slice(1, -1)
+        `,
+        "test/only.js": code`
+            const { assertSnapshot } = require(${JSON.stringify(IndexPath)})
+            it.only("snapshot-test 1", () => {
+                assertSnapshot({ value: "only" })
+            })
+            it("snapshot-test 2", () => {
+                assertSnapshot({ value: "bar" })
+            })
+        `,
     })
 
     describe("mocha --require mocha-assert-snapshot test/equal.js", () => {
@@ -462,6 +509,110 @@ describe("assertSnapshot(value) --compare--", () => {
             }
 
             assert.fail("should throw ENOENT error")
+        })
+    })
+
+    describe("mocha --require mocha-assert-snapshot --bail --update test/bail.js", () => {
+        let result: Executor.Result
+        before(async () => {
+            result = await executor.mocha(
+                "--require",
+                RegisterPath,
+                "--bail",
+                "--update",
+                "--",
+                "test/bail.js",
+            )
+        })
+
+        it("should finish with the exit code 1", () => {
+            assert.strictEqual(result.code, 1, result.stderr)
+        })
+
+        it('should print "snapshot-test 1"', () => {
+            assert(
+                result.stdout.includes("snapshot-test 1"),
+                'stdio should include "snapshot-test 1"',
+            )
+        })
+
+        it("should NOT remove unused entries from the snapshot file", async () => {
+            const snapshot = await readFile(
+                path.join(executor.workspacePath, "test/__snapshot__/bail.js"),
+                "utf8",
+            )
+
+            assert.strictEqual(
+                snapshot,
+                code`
+                    exports["snapshot-test 1 "] = String.raw${"`"}
+                    Object {
+                      "value": "bail",
+                    }
+                    ${"`"}.slice(1, -1)
+                    
+                    exports["snapshot-test 2 "] = String.raw${"`"}
+                    Object {
+                      "value": "bar",
+                    }
+                    ${"`"}.slice(1, -1)
+                `,
+            )
+        })
+    })
+
+    describe("mocha --require mocha-assert-snapshot --update test/only.js", () => {
+        let result: Executor.Result
+        before(async () => {
+            result = await executor.mocha(
+                "--require",
+                RegisterPath,
+                "--update",
+                "--",
+                "test/only.js",
+            )
+        })
+
+        it("should finish with the exit code 0", () => {
+            assert.strictEqual(result.code, 0, result.stderr)
+        })
+
+        it('should print "snapshot-test 1"', () => {
+            assert(
+                result.stdout.includes("snapshot-test 1"),
+                'stdio should include "snapshot-test 1"',
+            )
+        })
+
+        it('should not print "snapshot-test 2"', () => {
+            assert(
+                !result.stdout.includes("snapshot-test 2"),
+                'stdio should not include "snapshot-test 2"',
+            )
+        })
+
+        it("should NOT remove unused entries from the snapshot file", async () => {
+            const snapshot = await readFile(
+                path.join(executor.workspacePath, "test/__snapshot__/only.js"),
+                "utf8",
+            )
+
+            assert.strictEqual(
+                snapshot,
+                code`
+                    exports["snapshot-test 1 "] = String.raw${"`"}
+                    Object {
+                      "value": "only",
+                    }
+                    ${"`"}.slice(1, -1)
+                    
+                    exports["snapshot-test 2 "] = String.raw${"`"}
+                    Object {
+                      "value": "bar",
+                    }
+                    ${"`"}.slice(1, -1)
+                `,
+            )
         })
     })
 })
